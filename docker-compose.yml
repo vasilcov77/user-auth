@@ -1,0 +1,73 @@
+services:
+#  app:
+#    build:
+#      context: .
+#      dockerfile: ./build/docker/app/Dockerfile
+#    depends_on:
+#      - redis
+#      - postgres
+#      - kafka
+#    ports:
+#      - '8080:8080'
+
+  postgres:
+    image: postgres:18.6
+    environment:
+        POSTGRES_USER: ${POSTGRES_USER}
+        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+        POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - '5432:5432'
+
+  redis:
+    image: redis:8.10
+    ports:
+      - '6379:6379'
+
+  redis-ui:
+    image: rediscommander/redis-commander
+    ports:
+      - '8081:8081'
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+
+  kafka:
+    image: confluentinc/cp-kafka:7.9.10
+    ports:
+      - '9092:9092' # internal
+      - '9094:9094' # external
+    environment:
+      KAFKA_NODE_ID: 0
+      KAFKA_PROCESS_ROLES: 'controller,broker'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '0@kafka:9099'
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_LISTENERS: 'PLAINTEXT://:9092,CONTROLLER://:9099,EXTERNAL://:9094'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+
+  kafka-init:
+    image: confluentinc/cp-kafka:7.9.10
+    command: |
+      bash -c "
+      kafka-topics --create --bootstrap-server kafka:9092 --topic user-auth --partitions 8 --if-not-exists
+      "
+    restart: on-failure
+    depends_on:
+      - kafka
+
+  kafka-ui:
+    image: ghcr.io/kafbat/kafka-ui:latest
+    ports:
+      - "8082:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      - kafka
