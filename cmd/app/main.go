@@ -1,17 +1,26 @@
 package main
 
 import (
-	"net/http"
+	"context"
 
-	"github.com/go-chi/chi/v5"
+	"github.com/rs/zerolog/log"
+	"github.com/vasilcov77/user-auth/config"
+	"github.com/vasilcov77/user-auth/internal/app"
+	"github.com/vasilcov77/user-auth/pkg/logger"
 )
 
 func main() {
-	r := chi.NewRouter()
+	c, err := config.New()
+	if err != nil {
+		log.Fatal().Err(err).Msg("config.New")
+	}
 
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Привет, мир!"))
-	})
+	logger.Init(c.Logger)
 
-	http.ListenAndServe(":8080", r)
+	ctx := context.Background()
+
+	err = app.Run(ctx, c)
+	if err != nil {
+		log.Error().Err(err).Msg("app.Run")
+	}
 }

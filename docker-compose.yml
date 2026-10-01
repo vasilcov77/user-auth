@@ -40,6 +40,7 @@ services:
       - '9092:9092' # internal
       - '9094:9094' # external
     environment:
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
       KAFKA_NODE_ID: 0
       KAFKA_PROCESS_ROLES: 'controller,broker'
       KAFKA_CONTROLLER_QUORUM_VOTERS: '0@kafka:9099'
@@ -56,7 +57,7 @@ services:
     image: confluentinc/cp-kafka:7.9.10
     command: |
       bash -c "
-      kafka-topics --create --bootstrap-server kafka:9092 --topic user-auth --partitions 8 --if-not-exists
+      kafka-topics --create --bootstrap-server kafka:9092 --topic user-auth-topic --partitions 8 --if-not-exists
       "
     restart: on-failure
     depends_on:

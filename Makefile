@@ -8,7 +8,20 @@ lint:
 	golangci-lint run
 
 up:
-	docker compose up --build --force-recreate
+	docker compose up -d --build --force-recreate
 
 down:
 	docker compose down
+
+migrate-install:
+	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+
+migrate-create:
+	@read -p "Name:" name; \
+	migrate create -ext sql -dir "$(MIGRATE_PATH)" $$name
+
+migrate-up:
+	migrate -database "$(DB_MIGRATE_URL)" -path "$(MIGRATE_PATH)" up
+
+migrate-down:
+	migrate -database "$(DB_MIGRATE_URL)" -path "$(MIGRATE_PATH)" down -all
