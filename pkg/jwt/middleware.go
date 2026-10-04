@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 type UserIDContextKey struct{}
@@ -27,7 +28,7 @@ func Middleware(mgr *Manager) func(http.Handler) http.Handler {
 			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
 			token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
-				return mgr.AccessSecret(), nil // Секрет из auth пакета (экспортируйте или передавайте)
+				return mgr.AccessSecret(), nil
 			})
 
 			if err != nil || !token.Valid {
@@ -36,7 +37,10 @@ func Middleware(mgr *Manager) func(http.Handler) http.Handler {
 			}
 
 			claims := token.Claims.(jwt.MapClaims)
-			userID := int(claims["sub"].(float64))
+			userID, err := uuid.Parse(claims["sub"].(string))
+			if err != nil {
+				http.Error(w, "Invalid user id", http.StatusUnauthorized)
+			}
 
 			ctx := context.WithValue(r.Context(), UserIDContextKey{}, userID)
 			next.ServeHTTP(w, r.WithContext(ctx))
